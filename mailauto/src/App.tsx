@@ -1,92 +1,90 @@
-import React, { useState } from "react"
-import addNotification from "react-push-notification"
+import { useState, useEffect } from "react"
+import CopyButton from "./components/CopyButton/CopyButton"
 import Cabecalho from "./components/Cabecalho/Cabecalho";
+import Notificacao from "./components/Notificacao/Notificacao";
+import axios from 'axios';
 import "bootstrap/dist/css/bootstrap.min.css";
 import "./App.css"
-import axios from 'axios';
 
 function App() {
   const [email, setEmail] = useState<string | undefined>(undefined);
+  const [sessao, setSessao] = useState<string | undefined>(undefined);
   const [showInput, setShowInput] = useState(false);
-  const AUTH_TOKEN = 'MY_TOKEN';
+  const [mails, setMails] = useState<any[]>([]);
+  const AUTH_TOKEN = '12345678:';
   const CORS_PROXY_URL = "https://cors-anywhere.herokuapp.com/";
   const GRAPHQL_API_URL = `${CORS_PROXY_URL}https://dropmail.me/api/graphql/${AUTH_TOKEN}`;
 
-  async function createSession() {
-    const query = `mutation {
-      introduceSession {
-         id, expiresAt, addresses { address }
-         } 
-        }`;
+  // useEffect(() => {
+  //   checkIncomingMail();
 
-    try {
-      const response = await axios.post(GRAPHQL_API_URL, { query });
-      const { data } = response.data;
-      setEmail(data.introduceSession.addresses[0].address);
-      setShowInput(true)
-      return data.introduceSession;
-    } catch (error) {
-      console.error(error);
-    }
-  }
+  //   const intervalId = setInterval(checkIncomingMail, 300000);
+  //   return () => clearInterval(intervalId);
+  // }, []);
 
-  async function fetchIncomingMail(sessionId: string) {
-    const query = `query { 
-      session(id: "${sessionId}") { 
-        mails{
-          rawSize, fromAddr, toAddr... 
-        } 
-       } 
-      } `;
-
-    try {
-      const response = await axios.post(GRAPHQL_API_URL, { query });
-      const { data } = response.data;
-      console.log(data.session.mails);
-      return data.session.mails;
-    } catch (error) {
-      console.error(error);
-    }
-  }
-
-  const Notificacao = () => {
-    if (!("Notification" in window)) {
-      alert("Este navegador não suporta notificações de desktop.");
-    } else if (Notification.permission === "granted") {
-      addNotification({
-        title: 'OpenMail',
-        message: 'Você recebeu uma nova mensagem!',
-        duration: 6000,
-        native: true
-      });
-    } else if (Notification.permission !== "denied") {
-      Notification.requestPermission().then(function (permission) {
-        if (permission === "granted") {
-          addNotification({
-            title: 'NEW MAIL',
-            message: 'Você recebeu uma nova mensagem!',
-            duration: 6000,
-            native: true
-          });
-        }
-      });
-    } else {
-      alert("Você bloqueou as notificações deste site. Por favor, ative-as nas configurações do navegador.");
-    }
-  };
-
-  function copyToClipboard(email: string | undefined) {
-    if (!email) {
+  async function checkIncomingMail() {
+    console.log(sessao)
+    if (!sessao || sessao === "") {
+      console.error("Sessão inválida.");
       return;
     }
-    const el = document.createElement('textarea');
-    el.value = email;
-    document.body.appendChild(el);
-    el.select();
-    document.execCommand('copy');
-    document.body.removeChild(el);
+  
+    const query = `
+      query {
+        session(id: "${sessao}" ) {
+          mails{
+            rawSize,
+            fromAddr,
+            toAddr,
+            downloadUrl,
+            text,
+            headerSubject
+          }
+        }
+      }
+    `;
+  
+    try {
+      const response = await axios.post(GRAPHQL_API_URL, { query });
+      const { data } = response;
+      const { session } = data;
+      console.log(session)
+      if (!session) {
+        console.error("Sessão não encontrada.");
+        return;
+      }
+  
+      setMails(session.mails);
+  
+    } catch (error) {
+      console.error(error);
+    }
   }
 
+  async function createSession() {
+    const query = `
+      mutation {
+        introduceSession {
+          id,
+          expiresAt,
+          addresses {
+            address
+          }
+        }
+      }
+    `;
+  
+    try {
+      const response = await axios.post(GRAPHQL_API_URL, { query });
+      const session = response.data.data.introduceSession;
+      setEmail(session.addresses[0].address);
+      setSessao(session.id);
+      setShowInput(true);
+      return session;
+    } catch (error) {
+      console.error(error);
+    }
+  }
 
   return (
     <>
@@ -108,13 +106,14 @@ function App() {
                   <div className="input-group mb-3" style={{ width: "40vh" }}>
                     <input type="text" className="form-control" value={email} readOnly />
                     <div className="input-group-append">
-                      <button className="btn btn-success" style={{ width: "100px" }} onClick={() => copyToClipboard(email)}>Copiar</button>
+                      <button className="btn btn-success" style={{ width: "100px" }} onClick={() => CopyButton(email)}>Copiar</button>
                     </div>
                   </div>
                 </div>
               )}
             </div>
           </div>
+          <button onClick={checkIncomingMail}>check inbox</button>
         </section>
       </main>
     </>
