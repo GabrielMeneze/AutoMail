@@ -1,6 +1,6 @@
 import addNotification from "react-push-notification"
 
-export default function Notificacao() {
+const Notificacao = () => {
     if (!("Notification" in window)) {
       alert("Este navegador não suporta notificações de desktop.");
     } else if (Notification.permission === "granted") {
@@ -25,3 +25,5 @@ export default function Notificacao() {
       alert("Você bloqueou as notificações deste site. Por favor, ative-as nas configurações do navegador.");
     }
   };
+
+  export default Notificacao;
