@@ -6,8 +6,7 @@ import "bootstrap/dist/css/bootstrap.min.css";
 import 'bootstrap-icons/font/bootstrap-icons.css';
 import { ClipLoader } from "react-spinners";
 
-
-
+// função que realiza as requisições para a api e retorna os resultados encontrados
 const RequestsEmail = () => {
   const [email, setEmail] = React.useState<string>(localStorage.getItem("email") || "");
   const [sessao, setSessao] = React.useState<string | undefined>(undefined);
@@ -18,6 +17,7 @@ const RequestsEmail = () => {
   const CORS_PROXY_URL = "https://cors-anywhere.herokuapp.com/";
   const GRAPHQL_API_URL = `${CORS_PROXY_URL}https://dropmail.me/api/graphql/${AUTH_TOKEN}`;
 
+  // Esta função gera um novo Email e salva os dados (email e id da sessao) em localStorage
   async function NovoEmail() {
     const query = `
       mutation {
@@ -43,6 +43,9 @@ const RequestsEmail = () => {
     }
   }
 
+  // chamado sempre que a aplicação inicia e também a cada 15 segundos
+  // O useEffect verifica se já existe algum email Caso não exista um novo email é gerado. 
+  // a cada 15 segundos é feita uma requisição na função CheckInbox enviando o id da sessão
   useEffect(() => {
     if (!email) {
       NovoEmail()
@@ -54,13 +57,13 @@ const RequestsEmail = () => {
     return () => clearInterval(interval);
   }, [mails, sessao]);
 
+  // a função CheckInbox verifica se existe um id da sessao. caso exista uma query é enviada
+  // retornando a caixa de entrada encontrada na sessao
   async function CheckInbox() {
-
     if (!localStorage.sessao || localStorage.sessao === "") {
       console.error("Sessão inválida.");
       return;
     }
-
     const query = `
       query {
         session(id: "${localStorage.sessao}" ) {
@@ -75,7 +78,6 @@ const RequestsEmail = () => {
         }
       }
     `;
-
     try {
       const response = await axios.post(GRAPHQL_API_URL, { query });
       const { data } = response;
@@ -96,6 +98,7 @@ const RequestsEmail = () => {
     }
   }
 
+  // para que o usuário também não perca sua caixa de entrada os dados são transformados em string, enviados para localstorage
   useEffect(() => {
     const storedMails = localStorage.getItem("mails");
     if (storedMails) {
@@ -104,15 +107,17 @@ const RequestsEmail = () => {
       setPrevMailsLength(parsedMails.length);
     }
   }, []);
+
+  // devido ao prazo não foi possivel componentizar ainda mais o codigo 
   return (
     <>
-      <div className="col-10 mx-auto d-flex justify-content-center">
+      <section className="col-10 mx-auto d-flex justify-content-center">
         <div className="d-flex flex-column align-items-center">
             <button className="btn btn-success mx-2 mt-5" onClick={NovoEmail}>
               GERAR NOVO EMAIL
             </button>
           <div className="d-flex align-items-center mt-4">
-            <div className="input-group mb-3" style={{ maxWidth: "40vh" }}>
+            <div className="input-group mb-3" style={{ maxWidth: "70vh" }}>
               <input type="text" className="form-control" value={email} readOnly />
               <div className="input-group-append">
                 <button className="btn btn-success" style={{ width: "100px" }} onClick={() => CopyButton(email)}>Copiar</button>
@@ -120,8 +125,8 @@ const RequestsEmail = () => {
             </div>
           </div>
         </div>
-      </div>
-      <div className="container mt-5">
+      </section>
+      <section className="container mt-5">
         <div className="row">
           {mails !== undefined && mails.length > 0 ?
             mails.map((item) => {
@@ -144,7 +149,7 @@ const RequestsEmail = () => {
             </div>
           }
         </div>
-      </div>
+      </section>
     </>
   )
 

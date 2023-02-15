@@ -1,6 +1,7 @@
 import "bootstrap/dist/css/bootstrap.min.css";
 import Notificacao from "../Notificacao/Notificacao";
 
+// função que retorna o cabeçalho para app.tsx
 const Cabecalho = () => {
     return (
         <>
@@ -8,7 +9,7 @@ const Cabecalho = () => {
                 <div className="container-fluid h-100">
                     <div className="row h-100 align-items-center justify-content-around">
                         <div className="col-6 d-flex justify-content-center">
-                            <h1 style={{color: "white"}}>OpenEmail</h1>
+                            <h1 style={{ color: "white" }}>OpenEmail</h1>
                         </div>
                         <div className="col-6 d-flex justify-content-center">
                             <button onClick={Notificacao} className="btn btn-outline-light mx-2">

@@ -1,5 +1,6 @@
 import addNotification from "react-push-notification"
 
+// função que é chamada sempre que um novo email é recebido na caixa de entrada
 const AttEmail = () => {
     if (!("Notification" in window)) {
       alert("Este navegador não suporta notificações de desktop.");
@@ -14,7 +15,7 @@ const AttEmail = () => {
       Notification.requestPermission().then(function (permission) {
         if (permission === "granted") {
           addNotification({
-            title: 'NEW MAIL',
+            title: 'OpenMail',
             message: 'Você recebeu uma nova mensagem!',
             duration: 6000,
             native: true

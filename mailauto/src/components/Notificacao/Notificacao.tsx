@@ -1,5 +1,3 @@
-import addNotification from "react-push-notification"
-
 // Função que gera pedido de permissão para as notificações serem enviadas
 const Notificacao = () => {
     if (!("Notification" in window)) {

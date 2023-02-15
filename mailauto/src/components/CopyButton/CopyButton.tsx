@@ -1,3 +1,4 @@
+// função que verifica se existe email e caso exista copia o mesmo
 export default function CopyButton(email: string | undefined) {
     if (!email) {
         return;
