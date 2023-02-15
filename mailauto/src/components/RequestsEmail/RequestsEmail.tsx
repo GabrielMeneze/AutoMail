@@ -1,13 +1,19 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import CopyButton from "../CopyButton/CopyButton";
-import Notificacao from "../Notificacao/Notificacao";
+import AttEmail from "../AttEmail/AttEmail";
 import axios from "axios";
+import "bootstrap/dist/css/bootstrap.min.css";
+import 'bootstrap-icons/font/bootstrap-icons.css';
+import { ClipLoader } from "react-spinners";
+
+
 
 const RequestsEmail = () => {
-  const [email, setEmail] = useState<string | undefined>(undefined);
-  const [sessao, setSessao] = useState<string | undefined>(undefined);
-  const [showInput, setShowInput] = useState(false);
-  const [mails, setMails] = useState<any[]>([]);
+  const [email, setEmail] = React.useState<string>(localStorage.getItem("email") || "");
+  const [sessao, setSessao] = React.useState<string | undefined>(undefined);
+  const [prevMailsLength, setPrevMailsLength] = useState(0);
+  const [mails, setMails] = React.useState<any[]>(JSON.parse(localStorage.getItem("mails") || "[]"));
+
   const AUTH_TOKEN = '12345678:';
   const CORS_PROXY_URL = "https://cors-anywhere.herokuapp.com/";
   const GRAPHQL_API_URL = `${CORS_PROXY_URL}https://dropmail.me/api/graphql/${AUTH_TOKEN}`;
@@ -24,28 +30,40 @@ const RequestsEmail = () => {
         }
       }
     `;
-
     try {
       const response = await axios.post(GRAPHQL_API_URL, { query });
       const session = response.data.data.introduceSession;
+      localStorage.setItem("email", session.addresses[0].address);
+      localStorage.setItem("sessao", session.id);
       setEmail(session.addresses[0].address);
       setSessao(session.id);
-      setShowInput(true);
       return session;
     } catch (error) {
       console.error(error);
     }
   }
 
-  async function checkIncomingMail() {
-    if (!sessao || sessao === "") {
+  useEffect(() => {
+    if (!email) {
+      NovoEmail()
+    }
+    const interval = setInterval(() => {
+      setPrevMailsLength(mails.length);
+      CheckInbox();
+    }, 15000);
+    return () => clearInterval(interval);
+  }, [mails, sessao]);
+
+  async function CheckInbox() {
+
+    if (!localStorage.sessao || localStorage.sessao === "") {
       console.error("Sessão inválida.");
       return;
     }
-  
+
     const query = `
       query {
-        session(id: "${sessao}" ) {
+        session(id: "${localStorage.sessao}" ) {
           mails{
             rawSize,
             fromAddr,
@@ -57,7 +75,7 @@ const RequestsEmail = () => {
         }
       }
     `;
-  
+
     try {
       const response = await axios.post(GRAPHQL_API_URL, { query });
       const { data } = response;
@@ -67,62 +85,64 @@ const RequestsEmail = () => {
       }
       const newMails = data.data.session.mails;
       setMails(newMails);
-      if (newMails.length > mails.length) {
-        Notificacao();
+      localStorage.setItem("mails", JSON.stringify(newMails));
+
+      if (newMails.length > prevMailsLength) {
+        AttEmail();
       }
+      setPrevMailsLength(newMails.length);
     } catch (error) {
       console.error(error);
     }
   }
 
   useEffect(() => {
-    const timer = setTimeout(async () => {
-      await checkIncomingMail();
-      timerRef.current = setTimeout(() => { }, 15000);
-    }, 15000);
-
-    const timerRef = { current: timer };
-
-    return () => clearTimeout(timerRef.current);
+    const storedMails = localStorage.getItem("mails");
+    if (storedMails) {
+      const parsedMails = JSON.parse(storedMails);
+      setMails(parsedMails);
+      setPrevMailsLength(parsedMails.length);
+    }
   }, []);
-
   return (
     <>
       <div className="col-10 mx-auto d-flex justify-content-center">
-        <div>
-          <button className="btn btn-success mt-5" style={{ backgroundColor: "#1ca819", width: "35vh" }} onClick={NovoEmail}>
-            GERAR NOVO EMAIL
-          </button>
-          <button onClick={Notificacao} className="btn btn-success mt-5">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="bi bi-bell-fill" viewBox="0 0 16 16">
-              <path d="M8 16a2 2 0 0 0 2-2H6a2 2 0 0 0 2 2zm.995-14.901a1 1 0 1 0-1.99 0A5.002 5.002 0 0 0 3 6c0 1.098-.5 6-2 7h14c-1.5-1-2-5.902-2-7 0-2.42-1.72-4.44-4.005-4.901z" />
-            </svg>
-          </button>
-          {showInput && (
-            <div className="d-flex align-items-center mt-4">
-              <div className="input-group mb-3" style={{ width: "40vh" }}>
-                <input type="text" className="form-control" value={email} readOnly />
-                <div className="input-group-append">
-                  <button className="btn btn-success" style={{ width: "100px" }} onClick={() => CopyButton(email)}>Copiar</button>
-                </div>
+        <div className="d-flex flex-column align-items-center">
+            <button className="btn btn-success mx-2 mt-5" onClick={NovoEmail}>
+              GERAR NOVO EMAIL
+            </button>
+          <div className="d-flex align-items-center mt-4">
+            <div className="input-group mb-3" style={{ maxWidth: "40vh" }}>
+              <input type="text" className="form-control" value={email} readOnly />
+              <div className="input-group-append">
+                <button className="btn btn-success" style={{ width: "100px" }} onClick={() => CopyButton(email)}>Copiar</button>
               </div>
             </div>
-          )}
+          </div>
         </div>
       </div>
-      <button onClick={checkIncomingMail}>click</button>
-      <div className="col-10 mx-auto d-flex justify-content-center ">
-        <div>
-          {mails !== undefined &&
+      <div className="container mt-5">
+        <div className="row">
+          {mails !== undefined && mails.length > 0 ?
             mails.map((item) => {
               return (
-                <div className="d-flex flex-column">
-                  <td>{item.fromAddr}</td>
-                  <td>{item.headerSubject}</td>
-                  <td>{item.text}</td>
+                <div className="col-sm-10 mb-3 mx-auto">
+                  <div className="card">
+                    <div className="card-body">
+                      <h5 className="card-title">Remetente: {item.fromAddr}</h5>
+                      <h6 className="card-subtitle mb-2 text-muted">Assunto: {item.headerSubject}</h6>
+                      <p className="card-text">Mensagem: {item.text}</p>
+                    </div>
+                  </div>
                 </div>
               );
-            })}
+            })
+            :
+            <div className="d-flex flex-column align-items-center">
+              <p className="mx-4" style={{color: "white"}}>Sua caixa de entrada está vazia</p>
+              <ClipLoader size={50} color={"#1ca819"} loading={true} />
+            </div>
+          }
         </div>
       </div>
     </>

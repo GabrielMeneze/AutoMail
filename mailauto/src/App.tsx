@@ -5,12 +5,14 @@ import "bootstrap/dist/css/bootstrap.min.css";
 const App = () => {
   return (
     <>
-      <header>
-        <Cabecalho />
-      </header>
-      <main>
-        <RequestsEmail />
-      </main>
+      <body style={{ backgroundColor: '#181A1B', height: "100vh"}}>
+        <header>
+          <Cabecalho />
+        </header>
+        <main>
+          <RequestsEmail />
+        </main>
+      </body>
     </>
   )
 }
