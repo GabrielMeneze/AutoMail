@@ -6,7 +6,7 @@ Idealizado pela coodesh OpenEmail é um projeto que gera emails temporários.
 Ao abrir o projeto rode o seguinte comando na pasta mailauto: "yarn" ou "npm install --force" para instalar as dependências.
 Para inicializar o projeto é necessário o seguinte comando: "yarn run dev" ou "npm run dev".
 
-#Processo de desenvolvimento:
+# Processo de desenvolvimento:
   Ferramentas de desenvolvimento escolhidas{
       React.js
       Vite.js
